@@ -3,32 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="App de previsão do tempo feito com HTML, CSS e JavaScript puro consumindo a API do OpenWeather.">
+    <meta name="theme-color" content="#3b4f9a">
     <title>App de Clima - Portfólio</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛅</text></svg>">
+
+    <!-- Fonte "Outfit" do Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="theme-default">
 
-    <div class="weather-card">
-        <h2>Previsão do Tempo</h2>
-        
-        <div class="search-box">
-            <input type="text" id="cityInput" placeholder="Digite o nome da cidade...">
-            <button id="searchBtn">Buscar</button>
+    <!-- Camada decorativa do céu (brilho do sol, chuva, neve...) -->
+    <div class="sky" aria-hidden="true"></div>
+
+    <main class="weather-card">
+
+        <!-- Usar <form> faz o Enter funcionar sozinho, sem precisar ouvir o teclado -->
+        <form id="searchForm" class="search-box" role="search">
+            <label for="cityInput" class="sr-only">Nome da cidade</label>
+            <div class="input-wrap">
+                <svg class="input-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M10 2a8 8 0 0 1 6.32 12.9l5.39 5.4-1.41 1.4-5.4-5.39A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></svg>
+                <input type="text" id="cityInput" placeholder="Buscar cidade..." autocomplete="off" required>
+            </div>
+            <button type="submit" id="searchBtn" class="sr-only">Buscar</button>
+            <button type="button" id="locationBtn" class="icon-btn" aria-label="Usar minha localização" title="Usar minha localização">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A9 9 0 0 0 13 3.06V1h-2v2.06A9 9 0 0 0 3.06 11H1v2h2.06A9 9 0 0 0 11 20.94V23h2v-2.06A9 9 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z"/></svg>
+            </button>
+        </form>
+
+        <!-- aria-live avisa leitores de tela quando o conteúdo muda -->
+        <div aria-live="polite">
+
+            <!-- Tela inicial, antes da primeira busca -->
+            <div id="emptyState" class="empty-state">
+                <div class="empty-icon" aria-hidden="true">⛅</div>
+                <h1>Previsão do Tempo</h1>
+                <p>Busque uma cidade ou toque no alvo para usar sua localização.</p>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <span class="spinner" aria-hidden="true"></span>
+                <span>Buscando o clima...</span>
+            </div>
+
+            <div id="errorMessage" class="error-message hidden" role="alert"></div>
+
+            <section id="weatherResult" class="weather-result hidden">
+
+                <!-- Destaque: cidade, temperatura e ícone -->
+                <header class="hero">
+                    <h2 id="cityName">--</h2>
+                    <p id="localTime" class="local-time">--</p>
+                    <div class="hero-main">
+                        <div class="temp"><span id="temperature">--</span><span class="deg">°</span></div>
+                        <img id="weatherIcon" class="weather-icon" src="" alt="" width="120" height="120">
+                    </div>
+                    <p id="description" class="description">--</p>
+                    <p class="min-max">
+                        Máx <strong id="tempMax">--</strong>° &nbsp;·&nbsp; Mín <strong id="tempMin">--</strong>°
+                    </p>
+                </header>
+
+                <!-- Detalhes -->
+                <div class="details">
+                    <div class="detail">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15 13V5a3 3 0 0 0-6 0v8a5 5 0 1 0 6 0zm-3 7a3 3 0 0 1-1.5-5.6l.5-.3V5a1 1 0 0 1 2 0v9.1l.5.3A3 3 0 0 1 12 20z"/></svg>
+                        <span class="detail-label">Sensação</span>
+                        <span class="detail-value"><span id="feelsLike">--</span>°</span>
+                    </div>
+                    <div class="detail">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.7 6.3 8.4a8 8 0 1 0 11.4 0L12 2.7zM12 20a6 6 0 0 1-4.3-10.2L12 5.5l4.3 4.3A6 6 0 0 1 12 20z"/></svg>
+                        <span class="detail-label">Umidade</span>
+                        <span class="detail-value"><span id="humidity">--</span>%</span>
+                    </div>
+                    <div class="detail">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10a3 3 0 1 0-3-3M3 16h12a3 3 0 1 1-3 3M3 12h16a2.5 2.5 0 1 0-2.5-2.5"/></svg>
+                        <span class="detail-label">Vento</span>
+                        <span class="detail-value"><span id="wind">--</span> km/h</span>
+                    </div>
+                    <div class="detail">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 7a5 5 0 0 1 5 5H7a5 5 0 0 1 5-5zm-1-5h2v3h-2V2zM4.2 5.6l1.4-1.4 2.1 2.1-1.4 1.4-2.1-2.1zm12.1.7 2.1-2.1 1.4 1.4-2.1 2.1-1.4-1.4zM2 14h20v2H2v-2zm4 4h12v2H6v-2z"/></svg>
+                        <span class="detail-label">Sol</span>
+                        <span class="detail-value small"><span id="sunrise">--</span> · <span id="sunset">--</span></span>
+                    </div>
+                </div>
+
+                <!-- Próximas horas -->
+                <div class="panel">
+                    <h3 class="panel-title">Próximas horas</h3>
+                    <ul id="hourly" class="hourly"></ul>
+                </div>
+
+                <!-- Próximos dias -->
+                <div class="panel">
+                    <h3 class="panel-title">Próximos dias</h3>
+                    <ul id="forecast" class="forecast"></ul>
+                </div>
+            </section>
         </div>
 
-        <div id="weatherResult" class="weather-result hidden">
-            <h3 id="cityName">--</h3>
-            <div class="temp">
-                <span id="temperature">--</span>°C
-            </div>
-            <p id="description">--</p>
-            <div class="details">
-                <p>Umidade: <span id="humidity">--</span>%</p>
-            </div>
-        </div>
-
-        <p id="errorMessage" class="error-message hidden">Cidade não encontrada. Tente novamente.</p>
-    </div>
+        <p class="credits">Dados: <a href="https://openweathermap.org/" target="_blank" rel="noopener">OpenWeather</a></p>
+    </main>
 
     <script src="script.js"></script>
 </body>

@@ -1,118 +1,588 @@
-/* 1. Reset Global e Fonte */
-* { 
-    box-sizing: border-box; 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+/* ==========================================
+   1. VARIÁVEIS (mudar aqui muda o site inteiro)
+   ========================================== */
+:root {
+    --text: #ffffff;
+    --text-soft: rgba(255, 255, 255, 0.72);
+    --text-faint: rgba(255, 255, 255, 0.5);
+    --glass: rgba(255, 255, 255, 0.12);
+    --glass-strong: rgba(255, 255, 255, 0.18);
+    --glass-border: rgba(255, 255, 255, 0.22);
+    --card: rgba(16, 24, 48, 0.32);
+    --error: #ffb4ab;
+
+    /* Cores do céu (o JS troca a classe do body e estas mudam) */
+    --sky-top: #5b7cfa;
+    --sky-bottom: #8fb8f0;
+    --glow: rgba(255, 255, 255, 0.25);
 }
 
-/* 2. O Fundo e o Alinhamento (Body) */
-body { 
-    /* Um gradiente que lembra o céu para combinar com o tema */
-    background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
-    
-    /* Flexbox para colocar o cartão exatamente no centro da tela */
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    min-height: 100vh; 
-    margin: 0; 
+/* ==========================================
+   2. RESET E FUNDO
+   ========================================== */
+* {
+    box-sizing: border-box;
 }
 
-/* 3. O Cartão Principal */
-.weather-card { 
-    width: 100%; 
-    max-width: 400px; 
-    background: white; 
-    padding: 30px; 
-    border-radius: 15px; 
-    box-shadow: 0 15px 35px rgba(0,0,0,0.2); /* Sombra para dar profundidade */
-    text-align: center;
+body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 16px;
+    font-family: 'Outfit', 'Segoe UI', system-ui, sans-serif;
+    color: var(--text);
+    background: linear-gradient(160deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+    background-attachment: fixed;
+    transition: background 0.8s ease;
+    -webkit-font-smoothing: antialiased;
 }
 
-h2 {
-    margin-top: 0;
-    color: #333;
+/* Cada clima tem seu próprio céu */
+body.theme-clear-day   { --sky-top: #2f80ed; --sky-bottom: #f6c26b; --glow: rgba(255, 214, 102, 0.55); }
+body.theme-clear-night { --sky-top: #0b1026; --sky-bottom: #2b3a67; --glow: rgba(180, 200, 255, 0.18); }
+body.theme-clouds      { --sky-top: #5d6d87; --sky-bottom: #a9b8cc; --glow: rgba(255, 255, 255, 0.15); }
+body.theme-rain        { --sky-top: #1f2b48; --sky-bottom: #4f6487; --glow: rgba(140, 170, 220, 0.15); }
+body.theme-storm       { --sky-top: #111318; --sky-bottom: #3a3f4b; --glow: rgba(160, 150, 255, 0.15); }
+body.theme-snow        { --sky-top: #6f86b5; --sky-bottom: #d6e2f5; --glow: rgba(255, 255, 255, 0.35); }
+body.theme-mist        { --sky-top: #6e7584; --sky-bottom: #b9bcc4; --glow: rgba(255, 255, 255, 0.2); }
+
+/* ==========================================
+   3. CAMADA DECORATIVA DO CÉU
+   ========================================== */
+.sky {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
 }
 
-/* 4. A Área de Busca (Input e Botão) */
-.search-box { 
-    display: flex; 
-    gap: 10px; 
-    margin-bottom: 20px; 
+/* Um brilho redondo no canto (sol, lua, luz difusa) */
+.sky::before {
+    content: '';
+    position: absolute;
+    top: -15vmax;
+    right: -15vmax;
+    width: 50vmax;
+    height: 50vmax;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 65%);
+    transition: background 0.8s ease;
+    animation: pulse 8s ease-in-out infinite;
 }
 
-input[type="text"] { 
-    flex: 1; 
-    padding: 12px; 
-    border: 1px solid #ddd; 
-    border-radius: 8px; 
-    font-size: 1rem; 
+@keyframes pulse {
+    50% { transform: scale(1.08); }
 }
+
+/* Chuva: linhas diagonais que "caem" sem parar */
+.theme-rain .sky::after,
+.theme-storm .sky::after {
+    content: '';
+    position: absolute;
+    inset: -50% 0 0 0;
+    background-image: repeating-linear-gradient(
+        105deg,
+        transparent 0 14px,
+        rgba(255, 255, 255, 0.10) 14px 15px
+    );
+    background-size: 100% 120px;
+    animation: rain 0.6s linear infinite;
+}
+
+@keyframes rain {
+    to { transform: translateY(120px); }
+}
+
+/* Tempestade: um "relâmpago" de vez em quando */
+.theme-storm .sky {
+    animation: flash 7s infinite;
+}
+
+@keyframes flash {
+    0%, 92%, 96%, 100% { background: transparent; }
+    93%, 95% { background: rgba(255, 255, 255, 0.12); }
+}
+
+/* Neve: bolinhas caindo devagar */
+.theme-snow .sky::after {
+    content: '';
+    position: absolute;
+    inset: -100px 0 0 0;
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.9) 2px, transparent 3px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.6) 1.5px, transparent 2.5px);
+    background-size: 90px 90px, 60px 60px;
+    background-position: 0 0, 30px 40px;
+    animation: snow 6s linear infinite;
+}
+
+@keyframes snow {
+    to { transform: translateY(90px); }
+}
+
+/* Céu limpo à noite: estrelinhas */
+.theme-clear-night .sky::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.8) 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.5) 1px, transparent 1.5px);
+    background-size: 140px 140px, 90px 90px;
+    background-position: 10px 20px, 60px 70px;
+    animation: twinkle 4s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+    from { opacity: 0.5; }
+    to   { opacity: 1; }
+}
+
+/* ==========================================
+   4. O CARTÃO PRINCIPAL (vidro fosco)
+   ========================================== */
+.weather-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 440px;
+    padding: 24px;
+    border-radius: 28px;
+    background: var(--card);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+}
+
+/* Esconde visualmente, mas o leitor de tela ainda lê */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    padding: 0;
+    border: 0;
+}
+
+/* ==========================================
+   5. BUSCA
+   ========================================== */
+.search-box {
+    display: flex;
+    gap: 10px;
+}
+
+.input-wrap {
+    position: relative;
+    flex: 1;
+}
+
+.input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-soft);
+    pointer-events: none;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 14px 16px 14px 44px;
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    background: var(--glass);
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+input[type="text"]::placeholder { color: var(--text-faint); }
 
 input[type="text"]:focus {
     outline: none;
-    border-color: #9face6; /* Fica azulzinho quando você clica para digitar */
+    background: var(--glass-strong);
+    border-color: rgba(255, 255, 255, 0.55);
 }
 
-button { 
-    padding: 12px 20px; 
-    background-color: #6a82fb; 
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    font-weight: bold; 
-    transition: background 0.2s; 
+.icon-btn {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 50px;
+    height: 50px;
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    background: var(--glass);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
 }
 
-button:hover { 
-    background-color: #536be2; 
-}
+.icon-btn:hover { background: var(--glass-strong); }
+.icon-btn:active { transform: scale(0.94); }
+.icon-btn:disabled { opacity: 0.5; cursor: wait; }
+.icon-btn:focus-visible { outline: 2px solid white; outline-offset: 2px; }
 
 /* ==========================================
    A MÁGICA: A CLASSE FANTASMA
    ========================================== */
-.hidden { 
-    display: none !important; 
+.hidden {
+    display: none !important;
 }
 
-/* 5. Estilos dos Resultados (que vão aparecer depois) */
-.weather-result {
+/* ==========================================
+   6. TELA INICIAL, CARREGANDO E ERRO
+   ========================================== */
+.empty-state {
+    text-align: center;
+    padding: 36px 8px 12px;
+}
+
+.empty-icon {
+    font-size: 4.5rem;
+    line-height: 1;
+    animation: float 4s ease-in-out infinite;
+}
+
+.empty-state h1 {
+    margin: 16px 0 6px;
+    font-weight: 500;
+    font-size: 1.6rem;
+}
+
+.empty-state p {
+    margin: 0;
+    color: var(--text-soft);
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 48px 0;
+    color: var(--text-soft);
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.25);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-message {
     margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #eee; /* Uma linhazinha separando a busca do resultado */
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255, 80, 70, 0.18);
+    border: 1px solid rgba(255, 120, 110, 0.35);
+    color: var(--error);
+    text-align: center;
+    animation: shake 0.35s ease;
+}
+
+@keyframes shake {
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+
+/* ==========================================
+   7. RESULTADO PRINCIPAL
+   ========================================== */
+.weather-result {
+    margin-top: 8px;
+}
+
+/* Os blocos aparecem um depois do outro (efeito "cascata") */
+.weather-result > * {
+    animation: fadeUp 0.5s ease both;
+}
+.weather-result > *:nth-child(2) { animation-delay: 0.08s; }
+.weather-result > *:nth-child(3) { animation-delay: 0.16s; }
+.weather-result > *:nth-child(4) { animation-delay: 0.24s; }
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.hero {
+    text-align: center;
+    padding: 20px 0 8px;
 }
 
 #cityName {
-    font-size: 1.8rem;
-    margin: 0 0 10px 0;
-    color: #333;
+    margin: 0;
+    font-size: 1.7rem;
+    font-weight: 500;
+}
+
+.local-time {
+    margin: 2px 0 0;
+    color: var(--text-soft);
+    font-size: 0.95rem;
+    text-transform: capitalize;
+}
+
+.hero-main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    margin: 4px 0;
 }
 
 .temp {
-    font-size: 3.5rem;
-    font-weight: bold;
-    color: #ff9500;
-    margin-bottom: 10px;
+    font-size: 6rem;
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -4px;
 }
 
-#description {
-    font-size: 1.2rem;
-    color: #666;
-    text-transform: capitalize; /* Garante que 'chuva leve' vire 'Chuva leve' */
+.temp .deg {
+    font-size: 4rem;
+    vertical-align: top;
+    margin-left: 4px;
 }
 
+.weather-icon {
+    width: 120px;
+    height: 120px;
+    margin: -10px -14px -10px 0;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
+    animation: float 5s ease-in-out infinite;
+}
+
+@keyframes float {
+    50% { transform: translateY(-8px); }
+}
+
+.description {
+    margin: 0;
+    font-size: 1.25rem;
+    text-transform: capitalize; /* Garante que 'chuva leve' vire 'Chuva Leve' */
+}
+
+.min-max {
+    margin: 4px 0 0;
+    color: var(--text-soft);
+}
+
+.min-max strong {
+    color: var(--text);
+    font-weight: 500;
+}
+
+/* ==========================================
+   8. DETALHES (4 quadradinhos)
+   ========================================== */
 .details {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-top: 15px;
-    color: #555;
-    font-weight: bold;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 20px;
 }
 
-/* 6. Estilo da Mensagem de Erro */
-.error-message {
-    color: #ff3b30;
-    font-weight: bold;
-    margin-top: 20px;
+.detail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 12px 4px;
+    border-radius: 18px;
+    background: var(--glass);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail svg {
+    width: 20px;
+    height: 20px;
+    color: var(--text-soft);
+    margin-bottom: 4px;
+}
+
+.detail-label {
+    font-size: 0.75rem;
+    color: var(--text-soft);
+}
+
+.detail-value {
+    font-weight: 500;
+    font-size: 1.05rem;
+    white-space: nowrap;
+}
+
+.detail-value.small {
+    font-size: 0.8rem;
+}
+
+/* ==========================================
+   9. PAINÉIS (próximas horas e próximos dias)
+   ========================================== */
+.panel {
+    margin-top: 12px;
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: var(--glass);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.panel-title {
+    margin: 0 0 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-soft);
+}
+
+/* Próximas horas: tira horizontal que rola para o lado */
+.hourly {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 4px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none; /* Esconde a barra de rolagem (Firefox) */
+    /* Um "degradê" na borda direita dá a dica de que dá para rolar */
+    -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
+    mask-image: linear-gradient(90deg, #000 85%, transparent);
+}
+
+.hourly::-webkit-scrollbar { display: none; } /* Chrome, Edge, Safari */
+
+.hourly li {
+    flex: 1 0 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    scroll-snap-align: start;
+}
+
+.hourly .hour {
+    font-size: 0.8rem;
+    color: var(--text-soft);
+}
+
+.hourly img {
+    width: 48px;
+    height: 48px;
+    margin: -4px 0;
+}
+
+.hourly .pop {
+    font-size: 0.7rem;
+    color: #9fd3ff;
+    min-height: 1em;
+}
+
+.hourly .t {
+    font-weight: 500;
+}
+
+/* Próximos dias: uma linha por dia com a barra de variação */
+.forecast {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.forecast li {
+    display: grid;
+    grid-template-columns: 52px 40px 32px 1fr 32px;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.forecast li:first-child {
+    border-top: none;
+}
+
+.forecast .day {
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.forecast img {
+    width: 40px;
+    height: 40px;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
+}
+
+.forecast .min {
+    text-align: right;
+    color: var(--text-soft);
+}
+
+.forecast .max {
+    font-weight: 500;
+}
+
+/* A barra mostra onde a mínima e a máxima do dia ficam
+   em relação à semana inteira (posição calculada no JS) */
+.range-bar {
+    position: relative;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.range-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #7dd3fc, #fcd34d, #fb923c);
+}
+
+/* ==========================================
+   10. RODAPÉ
+   ========================================== */
+.credits {
+    margin: 16px 0 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+}
+
+.credits a {
+    color: inherit;
+}
+
+/* ==========================================
+   11. CELULAR
+   ========================================== */
+@media (max-width: 420px) {
+    .weather-card { padding: 18px; border-radius: 24px; }
+    .temp { font-size: 5rem; }
+    .temp .deg { font-size: 3.2rem; }
+    .weather-icon { width: 100px; height: 100px; }
+    .details { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Respeita quem prefere menos animação */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
