@@ -30,3 +30,17 @@ Aplicação de previsão do tempo feita com **HTML, CSS e JavaScript puro**, con
 1. Clone o repositório:
    ```bash
    git clone https://github.com/dioguinholf/projeto-app-clima.git
+2. Abra o `index.html` no navegador, ou use a extensão **Live Server** do VS Code.
+3. (Opcional) Crie sua própria chave gratuita em [openweathermap.org](https://openweathermap.org/api) e troque o valor de `apiKey` no `script.js`.
+
+## 📚 O que aprendi
+
+- Consumir uma API REST e tratar os diferentes códigos de erro (404, 401, 429)
+- Fazer duas requisições em paralelo com `Promise.all`
+- Converter horários para o fuso da cidade pesquisada
+- Agrupar dados de 3 em 3 horas em previsões por dia
+- Criar elementos com segurança usando `textContent` em vez de `innerHTML`
+
+## 👤 Autor
+
+Feito por **Diogo Lopes de França**: [GitHub](https://github.com/dioguinholf)
